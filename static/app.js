@@ -49,7 +49,6 @@
       var deltaT = ts - lastFrameTs;
       lastFrameTs = ts;
       currentFlight.timeLeft -= deltaT;
-      console.log(deltaT, (deltaT / currentFlight.time), currentFlight.distance, currentFlight.distance * (deltaT / currentFlight.time))
       viewer.camera.move(currentFlight.direction, currentFlight.distance * (deltaT / currentFlight.time));
 
       if(currentFlight.timeLeft <= 0){
@@ -60,25 +59,12 @@
     }
 
     function executeNextFlightNode(){
-      console.log("Executing next flight leg", viewer.camera.position);
       currentFlightNode = (currentFlightNode + 1) % flightData.points.length;
       var node = flightData.points[currentFlightNode];
-      /*
-      viewer.camera.flyTo({
-        duration: node.t,
-        destination: Cesium.Cartesian3.fromDegrees(node.long, node.lat, node.alt),
-        complete: executeNextFlightNode,
-        orientation: {
-          heading : 0,
-          pitch : 0,
-          roll : 0
-        },
-        maximumHeight: Math.min(node.alt, lastNode.alt)
-      });*/
       var currentPos = Cesium.Cartesian3.fromDegrees(lastNode.long, lastNode.lat, lastNode.alt);
       var targetPos = Cesium.Cartesian3.fromDegrees(node.long, node.lat, node.alt);
 
-      var direction = Cesium.Cartesian3.subtract(targetPos, currentPos, new Cesium.Cartesian3());
+      var direction = Cesium.Cartesian3.normalize(Cesium.Cartesian3.subtract(targetPos, currentPos, new Cesium.Cartesian3()), new Cesium.Cartesian3());
       var distance = Cesium.Cartesian3.distance(targetPos, currentPos);
       currentFlight = {
         start: currentPos,
@@ -89,7 +75,6 @@
         timeLeft: node.t * 1000
       };
       lastNode = node;
-      console.log(currentFlight);
       Cesium.requestAnimationFrame(frameMoveCamera);
     }
     $.get("demo-flight.json", function(data){
@@ -105,6 +90,7 @@
         }
       });
     });
+
       //executeNextFlightNode();
 
       // Gets position of our screen - might be useful
