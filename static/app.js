@@ -85,7 +85,7 @@
         destination: Cesium.Cartesian3.fromDegrees(node.long, node.lat, node.alt),
         orientation: {
           heading : 0,
-          pitch : -Math.PI / 10,
+          pitch : 0,
           roll : 0
         }
       });
