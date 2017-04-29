@@ -61,18 +61,6 @@
     function executeNextFlightNode(){
       currentFlightNode = (currentFlightNode + 1) % flightData.points.length;
       var node = flightData.points[currentFlightNode];
-      /*
-      viewer.camera.flyTo({
-        duration: node.t,
-        destination: Cesium.Cartesian3.fromDegrees(node.long, node.lat, node.alt),
-        complete: executeNextFlightNode,
-        orientation: {
-          heading : 0,
-          pitch : 0,
-          roll : 0
-        },
-        maximumHeight: Math.min(node.alt, lastNode.alt)
-      });*/
       var currentPos = Cesium.Cartesian3.fromDegrees(lastNode.long, lastNode.lat, lastNode.alt);
       var targetPos = Cesium.Cartesian3.fromDegrees(node.long, node.lat, node.alt);
 
