@@ -18,10 +18,10 @@
   });
   viewer.scene.globe.depthTestAgainstTerrain = true;
 
-  viewer.scene.screenSpaceCameraController.enableRotate = false;
-  viewer.scene.screenSpaceCameraController.enableTranslate = false;
-  viewer.scene.screenSpaceCameraController.enableZoom = false;
-  viewer.scene.screenSpaceCameraController.enableTilt = false;
+  viewer.scene.screenSpaceCameraController.enableRotate = true;
+  viewer.scene.screenSpaceCameraController.enableTranslate = true;
+  viewer.scene.screenSpaceCameraController.enableZoom = true;
+  viewer.scene.screenSpaceCameraController.enableTilt = true;
   viewer.scene.screenSpaceCameraController.enableLook = true;
 
 
@@ -104,9 +104,81 @@
           roll : 0
         }
       });
+    });
       //executeNextFlightNode();
 
-    });
+      // Gets position of our screen - might be useful
+      // var lastTime = Cesium.getTimestamp();
+      // var lastPosition = viewer.scene.camera.position.clone();
 
-  }());
+      // function preRender(scene) {
+      //     var time = Cesium.getTimestamp();
+      //     var position = scene.camera.position;
+      //     if (!Cesium.Cartesian3.equalsEpsilon(lastPosition, position, Cesium.Math.EPSILON4)) {
+      //         lastTime = time;
+      //     }
+
+      //     lastPosition = position.clone();
+      // }
+
+      // viewer.scene.preRender.addEventListener(preRender);
+
+      // function makeDegrees(lat, long, alt){
+      //     var result = Cesium.Cartesian3.fromDegrees(lat, long, alt);
+      //     console.log("Result: " + result);
+      // }
+
+      viewer.camera.changed.addEventListener(function(){
+        var rectangle = viewer.camera.computeViewRectangle();
+        var center = Cesium.Rectangle.center(rectangle);
+
+        var eastToCenter = rectangle.east - center.long;
+        var northToCenter = rectangle.north - center.lat;
+
+        var northSouthVal = northToCenter * 0.2;
+        var northVal = center + northSouthVal;
+        var southVal = center - northSouthVal;
+
+        var eastWestVal = eastToCenter * 0.2;
+        var eastVal = center + eastWestVal;
+        var westVal = center - eastWestVal;
+
+        console.log("west: ", westVal, " south: ", southVal, " east: ", eastVal, " north: ", northVal);
+
+        // viewer.entities.add({
+        //   rectangle : {
+        //     coordinates : Cesium.Rectangle.fromDegrees(westVal, southVal, eastVal, northVal)
+        //   }
+        // });
+      });
+
+      var locations = null;
+
+      $.ajax({
+          url: '/api/getPlaces',
+          type: 'GET',
+          crossDomain: true,
+          success: function(data) { 
+            console.log(locations = data.body); 
+            for (var key in locations) {
+              // skip loop if the property is from prototype
+              if (!locations.hasOwnProperty(key)) continue;
+              
+              var location = locations[key];
+              var pinBuilder = new Cesium.PinBuilder();
+
+              var bluePin = viewer.entities.add({
+                  name : location.name,
+                  position : Cesium.Cartesian3.fromDegrees(location.lat, location.lon),
+                  billboard : {
+                      image : pinBuilder.fromColor(Cesium.Color.ROYALBLUE, 48).toDataURL(),
+                      verticalOrigin : Cesium.VerticalOrigin.BOTTOM
+                  }
+              });
+
+            }
+          },
+          error: function(error) { console.log(error); }
+      });
+    }());
 }());
