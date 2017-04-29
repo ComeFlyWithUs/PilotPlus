@@ -1,2 +1,0 @@
-# vr
-Virtual Reality stuff
