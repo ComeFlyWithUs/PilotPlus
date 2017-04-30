@@ -92,28 +92,6 @@
       executeNextFlightNode();
     });
 
-      
-
-      // Gets position of our screen - might be useful
-      // var lastTime = Cesium.getTimestamp();
-      // var lastPosition = viewer.scene.camera.position.clone();
-
-      // function preRender(scene) {
-      //     var time = Cesium.getTimestamp();
-      //     var position = scene.camera.position;
-      //     if (!Cesium.Cartesian3.equalsEpsilon(lastPosition, position, Cesium.Math.EPSILON4)) {
-      //         lastTime = time;
-      //     }
-
-      //     lastPosition = position.clone();
-      // }
-
-      // viewer.scene.preRender.addEventListener(preRender);
-
-      // function makeDegrees(lat, long, alt){
-      //     var result = Cesium.Cartesian3.fromDegrees(lat, long, alt);
-      //     console.log("Result: " + result);
-      // }
       var viewerTarget = null;
       viewer.camera.changed.addEventListener(function(){
         var viewport = $("#cesiumContainer");
@@ -131,6 +109,7 @@
           viewer.entities.remove(viewerTarget);
         }
         console.log("Posting new pin", center);
+      
         
         /* PUT A PIN WHERE WE ARE */
         // viewerTarget = viewer.entities.add({
@@ -142,31 +121,16 @@
         //     }
         // });
 
-        getNearbyStuff(center);
-
-  // var eastToCenter = rectangle.east - center.longitude;
-        // var northToCenter = rectangle.north - center.latitude;
-
-        // var northSouthVal = northToCenter * 0.2;
-        // var northVal = center.latitude + northSouthVal;
-        // var southVal = center.latitude - northSouthVal;
-
-        // var eastWestVal = eastToCenter * 0.2;
-        // var eastVal = center.longitude + eastWestVal;
-        // var westVal = center.longitude - eastWestVal;
-
-        // console.log("west: ", westVal, " south: ", southVal, " east: ", eastVal, " north: ", northVal);
-        // if(viewerTarget != null){
-        //   viewer.entities.remove(viewerTarget);
-        // }
-
+        /* GOOGLE ANALYTICS ENGINE HAS A QUOTA - WE JUST HIT IT!!*/
+        getNearbyAirports(center);
+        //getNearbyPlanes(center);
+        //getInfoFromLatLong(center);
       });
 
       var locations = null;
 
-      function getNearbyStuff(center){
+      function getNearbyAirports(center){
         var latLong = Cesium.Cartographic.fromCartesian(center);
-        console.log(latLong);
 
         var obj = {};
         obj.lat = latLong.latitude * (180.0 / Math.PI);
@@ -212,6 +176,68 @@
           },
           error: function(error) { console.log(error); }
       });
-      }
+    };
+
+    // Nearly completed - fix array range error!
+    function getNearbyPlanes(center){
+      var latLong = Cesium.Cartographic.fromCartesian(center);
+
+      var obj = {};
+      obj.lat = latLong.latitude * (180.0 / Math.PI);
+      obj.long = latLong.longitude * (180.0 / Math.PI);
+
+      $.ajax({
+          url: '/api/getPlanes',
+          type: 'GET',
+          data: obj,
+          dataType: 'json',
+          success: function(data) {
+            var planes = data;
+
+            for (var j=0; j<planes.length; j++){
+              var pinBuilder = new Cesium.PinBuilder();
+              console.log("Placing plane pin at", Cesium.Cartesian3.fromDegrees(planes[j].long, planes[j].lat, planes[j].altitude));
+              viewer.entities.add({
+                  name : planes[j].name,
+                  position : Cesium.Cartesian3.fromDegrees(planes[j].long, planes[j].lat, planes[j].altitude),
+                  billboard : {
+                    image : pinBuilder.fromColor(Cesium.Color.ROYALBLUE, 48).toDataURL(),
+                    verticalOrigin : Cesium.VerticalOrigin.BOTTOM
+                  },
+                  label : {
+                      text : planes[j].name,
+                      font : '12pt monospace',
+                      //style: Cesium.LabelStyle.OUTLINE,
+                      //outlineWidth : 2,
+                      verticalOrigin : Cesium.VerticalOrigin.BOTTOM,
+                      pixelOffset : new Cesium.Cartesian2(0, -9)
+                    }
+              });
+            } 
+          },
+          error: function(error) { console.log(error); }
+      });
+    }
+
+    function getInfoFromLatLong(center){
+      console.log("I'm in");
+      var latLong = Cesium.Cartographic.fromCartesian(center);
+
+        var obj = {};
+        obj.lat = latLong.latitude * (180.0 / Math.PI);
+        obj.long = latLong.longitude * (180.0 / Math.PI);
+
+        $.ajax({
+          url: '/api/getInfoFromLatLong',
+          type: 'GET',
+          data: obj,
+          dataType: 'json',
+          success: function(data) {
+            var info = data;
+            console.log(info);
+          }, error: function(error) { console.log(error); }
+        });
+    }
+
     }());
 }());

@@ -93,7 +93,6 @@ router.get('/getPlanes', function (req, res, next) {
         if (error)
             throw new Error(error);
             var results = response.body.planes["0"];
-            console.log(results);
             var planes = [];
             for (var key in results){
               flight = {};
@@ -106,7 +105,6 @@ router.get('/getPlanes', function (req, res, next) {
               flight.heading = results[key][6];
               flight.airspeed = results[key][7];
               flight.route = results[key][11];
-              console.log(flight);
               planes.push(flight);
             }
             // weatherObj.weather = result.weather[0].main;
@@ -118,6 +116,29 @@ router.get('/getPlanes', function (req, res, next) {
     });
 });
 
+    router.get('/getInfoFromLatLong', function(req, res, next){
+        //http://api.opencagedata.com/geocode/v1/json?q=50.123+-3.78&key=79ff7aef60f15ca75b348ae0bafad9d5
+        var lat = req.param('lat');
+        var long = req.param('long');
+        var basePath = "http://api.opencagedata.com/geocode/v1/json";
+        var key = "79ff7aef60f15ca75b348ae0bafad9d5";
+        var url = basePath + "?q=" + lat + "+" + long + "&key=" + key;
+
+        var options = { method: 'GET',
+            url: url,
+            headers: { 'content-type': 'application/json' },
+            json: true
+        };
+
+        request(options, function (error, response, body) {
+            if (error)
+                throw new Error(error);
+
+            var results = response.body;
+
+            res.json(results);
+        })
+    });
 
 
 module.exports = router;
