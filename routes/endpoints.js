@@ -24,7 +24,7 @@ router.get('/getAirports', function (req, res, next) {
     var baseUrl = "https://maps.googleapis.com/maps/api/place/nearbysearch/json";
     //var key = "AIzaSyBA1clTuoA4xzkQaqYdmLlM5VDVQeue8sE";
     var key = "AIzaSyBqzAaUsP-A6pacaRpQwBdD0Lk-m2wXs04";
-    var url = baseUrl + "?key=" + key + "&location=" + lat + ","+ long + "&radius=" + radius + "&type=airport";
+    var url = baseUrl + "?key=" + key + "&location=" + lat + ","+ long + "&radius=" + radius + "&types=stadium,airport,place_of_worship";
 
     var options = { method: 'GET',
       url: url,
@@ -41,6 +41,7 @@ router.get('/getAirports', function (req, res, next) {
         for (var i=0; i<results.length; i++){
           var result = {};
           result.name = results[i].name;
+          console.log(results[i].types);
           result.lat = results[i].geometry.location.lat;
           result.long = results[i].geometry.location.lng;
           result.weather = {weather : "Cloudy", temperature : 15, wind:{dir:"N",v:10}};
@@ -56,7 +57,7 @@ router.get('/getStadia', function (req, res, next) {
     var long = req.param('long');
     var radius = req.param('radius');
     var baseUrl = "https://maps.googleapis.com/maps/api/place/nearbysearch/json";
-    var key = "AIzaSyBA1clTuoA4xzkQaqYdmLlM5VDVQeue8sE";
+    var key = "AIzaSyBqzAaUsP-A6pacaRpQwBdD0Lk-m2wXs04";
     var url = baseUrl + "?key=" + key + "&location=" + lat + ","+ long + "&radius=" + radius + "&type=stadium";
 
     var options = { method: 'GET',
@@ -66,18 +67,20 @@ router.get('/getStadia', function (req, res, next) {
     };
 
     request(options, function (error, response, body) {
-        if (error)
-            throw new Error(error);
-            var listOfPlaces = [];
-            var results = response.body.results;
-            for (var i=0; i<results.length; i++){
-              var result = {};
-              result.name = results[i].name;
-              result.lat = results[i].geometry.location.lat;
-              result.long = results[i].geometry.location.lng;
-              result.weather = {weather : "Cloudy", temperature : 15, wind:{dir:"N",v:10}};
-              listOfPlaces.push(result);
-            }
+      console.log(response);
+        if (error){
+          throw new Error(error);
+        }
+        var listOfPlaces = [];
+        var results = response.body.results;
+        for (var i=0; i<results.length; i++){
+          var result = {};
+          result.name = results[i].name;
+          result.lat = results[i].geometry.location.lat;
+          result.long = results[i].geometry.location.lng;
+          result.weather = {weather : "Cloudy", temperature : 15, wind:{dir:"N",v:10}};
+          listOfPlaces.push(result);
+        }
         res.json(listOfPlaces);
     });
 });
@@ -124,28 +127,24 @@ router.get('/getPlanes', function (req, res, next) {
     };
 
     request(options, function (error, response, body) {
-        if (error)
+        if (error){
             throw new Error(error);
-            var results = response.body.planes["0"];
-            var planes = [];
-            for (var key in results){
-              flight = {};
-              flight.planeModel = results[key][0];
-              flight.planeNumber = results[key][1];
-              flight.flightNumber = results[key][2];
-              flight.lat = results[key][3];
-              flight.long = results[key][4];
-              flight.altitude = results[key][5];
-              flight.heading = results[key][6];
-              flight.airspeed = results[key][7];
-              flight.route = results[key][11];
-              planes.push(flight);
-            }
-            // weatherObj.weather = result.weather[0].main;
-            // weatherObj.temperature = result.main.temp - 273;
-            // weatherObj.wind = result.wind;
-            // weatherObj.visibility = result.visibility;
-            // weatherObj.pressure = result.pressure;
+          }
+          var results = response.body.planes["0"];
+          var planes = [];
+          for (var key in results){
+            flight = {};
+            flight.planeModel = results[key][0];
+            flight.planeNumber = results[key][1];
+            flight.flightNumber = results[key][2];
+            flight.lat = results[key][3];
+            flight.long = results[key][4];
+            flight.altitude = results[key][5];
+            flight.heading = results[key][6];
+            flight.airspeed = results[key][7];
+            flight.route = results[key][11];
+            planes.push(flight);
+          }
         res.json(planes);
     });
 });
@@ -165,13 +164,12 @@ router.get('/getPlanes', function (req, res, next) {
         };
 
         request(options, function (error, response, body) {
-            if (error)
+            if (error){
                 throw new Error(error);
-
+            }
             var results = response.body;
-
             res.json(results);
-        })
+        });
     });
 
 
