@@ -60,9 +60,13 @@ router.get('/getGround', function (req, res, next) {
     var long = req.param('long');
     var radius = req.param('radius');
     asyncTasks = [
-      listOfPlaces(lat, long, radius, "airport"),
-      listOfPlaces(lat, long, radius, "stadium"),
-      listOfPlaces(lat, long, radius, "amusement_park")
+      getPlaces(lat, long, radius, "airport"),
+      getPlaces(lat, long, radius, "stadium"),
+      getPlaces(lat, long, radius, "amusement_park"),
+      getPlaces(lat, long, radius, "transit_station"),
+      getPlaces(lat, long, radius, "university"),
+      getPlaces(lat, long, radius, "museum"),
+      getPlaces(lat, long, radius, "city_hall")
     ];
     listToReturn = [];
     async.parallel(asyncTasks, function(err, results){
