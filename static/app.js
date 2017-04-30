@@ -194,7 +194,7 @@
         var obj = {};
         obj.lat = latLong.latitude * (180.0 / Math.PI);
         obj.long = latLong.longitude * (180.0 / Math.PI);
-        obj.radius = 50000;
+        obj.radius = 10000;
         var now = new Date().getTime();
         if(now - lastFetch > 10000){
           lastFetch = now;
