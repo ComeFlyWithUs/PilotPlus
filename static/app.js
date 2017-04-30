@@ -50,7 +50,7 @@
       lastFrameTs = ts;
       currentFlight.timeLeft -= deltaT;
       viewer.camera.move(currentFlight.direction, currentFlight.distance * (deltaT / currentFlight.time));
-
+      viewer.camera.percentageChanged = 0.25;
       if(currentFlight.timeLeft <= 0){
         executeNextFlightNode();
       }else{
@@ -131,14 +131,19 @@
           viewer.entities.remove(viewerTarget);
         }
         console.log("Posting new pin", center);
-        var bluePin = viewer.entities.add({
-            name : "viewport center",
-            position : center,
-            billboard : {
-                image : pinBuilder.fromColor(Cesium.Color.ROYALBLUE, 48).toDataURL(),
-                verticalOrigin : Cesium.VerticalOrigin.BOTTOM
-            }
-        });
+        
+        /* PUT A PIN WHERE WE ARE */
+        // viewerTarget = viewer.entities.add({
+        //     name : "viewport center",
+        //     position : center,
+        //     billboard : {
+        //         image : pinBuilder.fromColor(Cesium.Color.ROYALBLUE, 48).toDataURL(),
+        //         verticalOrigin : Cesium.VerticalOrigin.BOTTOM
+        //     }
+        // });
+
+        getNearbyStuff(center);
+
   // var eastToCenter = rectangle.east - center.longitude;
         // var northToCenter = rectangle.north - center.latitude;
 
@@ -159,31 +164,54 @@
 
       var locations = null;
 
-      $.ajax({
-          url: '/api/getPlaces',
+      function getNearbyStuff(center){
+        var latLong = Cesium.Cartographic.fromCartesian(center);
+        console.log(latLong);
+
+        var obj = {};
+        obj.lat = latLong.latitude * (180.0 / Math.PI);
+        obj.long = latLong.longitude * (180.0 / Math.PI);
+        obj.radius = 50000;
+
+        $.ajax({
+          url: '/api/getAirports',
           type: 'GET',
-          crossDomain: true,
-          success: function(data) { 
-            console.log(locations = data.body); 
-            for (var key in locations) {
-              // skip loop if the property is from prototype
-              if (!locations.hasOwnProperty(key)) continue;
-              
-              var location = locations[key];
+          data: obj,
+          dataType: 'json',
+          success: function(data) {
+            var airports = data;
+
+            for (var i=0;i<airports.length;i++){
               var pinBuilder = new Cesium.PinBuilder();
-              console.log("Placing PoI pin at", Cesium.Cartesian3.fromDegrees(location.lat, location.lon));
-              var bluePin = viewer.entities.add({
-                  name : location.name,
-                  position : Cesium.Cartesian3.fromDegrees(location.lat, location.lon),
+              console.log("Placing airport pin at", Cesium.Cartesian3.fromDegrees(airports[i].lat, airports[i].long));
+              viewer.entities.add({
+                  name : airports[i].name,
+                  position : Cesium.Cartesian3.fromDegrees(airports[i].long, airports[i].lat),
+                  description: "Forecast: " + airports[i].weather.weather + 
+                    "<br>Temperature: " + airports[i].weather.temperature + 
+                    "<br>Wind Speed: " + airports[i].weather.wind.v +
+                    "<br>Wind Direction: " + airports[i].weather.wind.dir,
                   billboard : {
                       image : pinBuilder.fromColor(Cesium.Color.ROYALBLUE, 48).toDataURL(),
                       verticalOrigin : Cesium.VerticalOrigin.BOTTOM
-                  }
+                  },
+                  label : {
+                      text : airports[i].name + 
+                            "\nForecast: " + airports[i].weather.weather + 
+                            "\nTemperature: " + airports[i].weather.temperature + 
+                            "\nWind Speed: " + airports[i].weather.wind.v +
+                            "\nWind Direction: " + airports[i].weather.wind.dir,
+                      font : '12pt monospace',
+                      //style: Cesium.LabelStyle.OUTLINE,
+                      //outlineWidth : 2,
+                      verticalOrigin : Cesium.VerticalOrigin.BOTTOM,
+                      pixelOffset : new Cesium.Cartesian2(0, -9)
+                    }
               });
-
             }
           },
           error: function(error) { console.log(error); }
       });
+      }
     }());
 }());
