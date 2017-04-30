@@ -48,7 +48,7 @@ router.get('/getAirports', function (req, res, next) {
     });
 });
 
-// http://localhost:8081/api/getAirports?lat=50.727622&long=-3.475646
+// http://localhost:8081/api/getWeather?lat=50.727622&long=-3.475646
 router.get('/getWeather', function (req, res, next) {
     var lat = req.param('lat');
     var long = req.param('long');
@@ -75,5 +75,49 @@ router.get('/getWeather', function (req, res, next) {
         res.json(weatherObj);
     });
 });
+//https://planefinder.net/endpoints/update.php?callback=planeDataCallback&faa=1&routetype=iata&cfCache=true&bounds=50%2C-6%2C52%2C-1&_=1493512540
+router.get('/getPlanes', function (req, res, next) {
+    var lat = req.param('lat');
+    var long = req.param('long');
+    var basePath = "https://planefinder.net/endpoints/update.php?faa=1&routetype=iata&cfCache=true&";
+    var key = "6913f2bc71fcb8d4796095c8a6037154";
+    var url = basePath + "bounds=" + (lat-10) + "," + (long-10) + "," + (lat+10) + "," + (long+10) + "&_=149351254";
+
+    var options = { method: 'GET',
+      url: url,
+      headers: { 'content-type': 'application/json' },
+      json: true
+    };
+
+    request(options, function (error, response, body) {
+        if (error)
+            throw new Error(error);
+            var results = response.body.planes["0"];
+            console.log(results);
+            var planes = [];
+            for (var key in results){
+              flight = {};
+              flight.planeModel = results[key][0];
+              flight.planeNumber = results[key][1];
+              flight.flightNumber = results[key][2];
+              flight.lat = results[key][3];
+              flight.long = results[key][4];
+              flight.altitude = results[key][5];
+              flight.heading = results[key][6];
+              flight.airspeed = results[key][7];
+              flight.route = results[key][11];
+              console.log(flight);
+              planes.push(flight);
+            }
+            // weatherObj.weather = result.weather[0].main;
+            // weatherObj.temperature = result.main.temp - 273;
+            // weatherObj.wind = result.wind;
+            // weatherObj.visibility = result.visibility;
+            // weatherObj.pressure = result.pressure;
+        res.json(planes);
+    });
+});
+
+
 
 module.exports = router;
