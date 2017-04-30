@@ -40,8 +40,8 @@ router.get('/getAirports', function (req, res, next) {
         var results = response.body.results;
         for (var i=0; i<results.length; i++){
           var result = {};
+          result.type = "airport";
           result.name = results[i].name;
-          console.log(results[i].types);
           result.lat = results[i].geometry.location.lat;
           result.long = results[i].geometry.location.lng;
           result.weather = {weather : "Cloudy", temperature : 15, wind:{dir:"N",v:10}};
@@ -75,6 +75,7 @@ router.get('/getStadia', function (req, res, next) {
         var results = response.body.results;
         for (var i=0; i<results.length; i++){
           var result = {};
+          result.type = "stadium";
           result.name = results[i].name;
           result.lat = results[i].geometry.location.lat;
           result.long = results[i].geometry.location.lng;
