@@ -1,5 +1,6 @@
 (function(){
   "use strict";
+  Cesium.BingMapsApi.defaultKey = "AnD6fuC04ElaloYXDwvfUzJXS-Gq5wBrgeFEXtE0cSuukTFEeTufzYdLUEM49ZcF";
   var viewer = new Cesium.Viewer('cesiumContainer', {
       vrButton : true,
       timeline: false,
@@ -10,7 +11,8 @@
       selectionIndicator: false,
       navigationInstructionsInitiallyVisible: false,
       animation: false
-  });/*
+  });
+  /*
   viewer.scene.globe.enableLighting = true;
   viewer.terrainProvider = new Cesium.CesiumTerrainProvider({
     url : 'https://assets.agi.com/stk-terrain/world',
@@ -18,10 +20,10 @@
   });
   viewer.scene.globe.depthTestAgainstTerrain = true;
 */
-  viewer.scene.screenSpaceCameraController.enableRotate = true;
-  viewer.scene.screenSpaceCameraController.enableTranslate = true;
-  viewer.scene.screenSpaceCameraController.enableZoom = true;
-  viewer.scene.screenSpaceCameraController.enableTilt = true;
+  viewer.scene.screenSpaceCameraController.enableRotate = false;
+  viewer.scene.screenSpaceCameraController.enableTranslate = false;
+  viewer.scene.screenSpaceCameraController.enableZoom = false;
+  viewer.scene.screenSpaceCameraController.enableTilt = false;
   viewer.scene.screenSpaceCameraController.enableLook = true;
 
 
@@ -92,34 +94,13 @@
       executeNextFlightNode();
     });
 
-      
-
-      // Gets position of our screen - might be useful
-      // var lastTime = Cesium.getTimestamp();
-      // var lastPosition = viewer.scene.camera.position.clone();
-
-      // function preRender(scene) {
-      //     var time = Cesium.getTimestamp();
-      //     var position = scene.camera.position;
-      //     if (!Cesium.Cartesian3.equalsEpsilon(lastPosition, position, Cesium.Math.EPSILON4)) {
-      //         lastTime = time;
-      //     }
-
-      //     lastPosition = position.clone();
-      // }
-
-      // viewer.scene.preRender.addEventListener(preRender);
-
-      // function makeDegrees(lat, long, alt){
-      //     var result = Cesium.Cartesian3.fromDegrees(lat, long, alt);
-      //     console.log("Result: " + result);
-      // }
+      var lastPinBatch = {};
       var viewerTarget = null;
       viewer.camera.changed.addEventListener(function(){
         var viewport = $("#cesiumContainer");
         var viewportWidth = viewport.width();
         var viewportHeight = viewport.height();
-        
+
         var ray = viewer.camera.getPickRay(new Cesium.Cartesian2(viewportWidth / 2, viewportHeight / 2));
         var intersection = Cesium.IntersectionTests.rayEllipsoid(ray, Cesium.Ellipsoid.WGS84);
         if(!intersection){
@@ -127,11 +108,12 @@
         }
         var center = Cesium.Ray.getPoint(ray, intersection.start);
         var pinBuilder = new Cesium.PinBuilder();
-        if(viewerTarget){
-          viewer.entities.remove(viewerTarget);
-        }
+        //if(viewerTarget){
+        //  viewer.entities.remove(viewerTarget);
+        //}
         console.log("Posting new pin", center);
-        
+
+
         /* PUT A PIN WHERE WE ARE */
         // viewerTarget = viewer.entities.add({
         //     name : "viewport center",
@@ -142,76 +124,165 @@
         //     }
         // });
 
-        getNearbyStuff(center);
+        /* GOOGLE ANALYTICS ENGINE HAS A QUOTA - WE JUST HIT IT!!*/
 
-  // var eastToCenter = rectangle.east - center.longitude;
-        // var northToCenter = rectangle.north - center.latitude;
-
-        // var northSouthVal = northToCenter * 0.2;
-        // var northVal = center.latitude + northSouthVal;
-        // var southVal = center.latitude - northSouthVal;
-
-        // var eastWestVal = eastToCenter * 0.2;
-        // var eastVal = center.longitude + eastWestVal;
-        // var westVal = center.longitude - eastWestVal;
-
-        // console.log("west: ", westVal, " south: ", southVal, " east: ", eastVal, " north: ", northVal);
-        // if(viewerTarget != null){
-        //   viewer.entities.remove(viewerTarget);
-        // }
-
+        getNearbyAirports(center);
+        //getNearbyPlanes(center);
+        //getInfoFromLatLong(center);
       });
 
       var locations = null;
+      var airportData = [];
+      var lastFetch = 0;
+      function renderAirports(data, center) {
+        var airports = data;
 
-      function getNearbyStuff(center){
+        lastPinBatch.airports.forEach(function(pin){ viewer.entities.remove(pin); });
+        lastPinBatch.airports.splice(0, lastPinBatch.airports.length);
+
+        var closestPoint = findClosestPoint(airports, center);
+
+        for (var i=0;i<airports.length;i++){
+          var pinBuilder = new Cesium.PinBuilder();
+          //console.log("Placing airport pin at", Cesium.Cartesian3.fromDegrees(airports[i].lat, airports[i].long));
+          var pinObj = {
+              name : airports[i].name,
+              position : Cesium.Cartesian3.fromDegrees(airports[i].long, airports[i].lat),
+              description: "Forecast: " + airports[i].weather.weather +
+                "<br>Temperature: " + airports[i].weather.temperature +
+                "<br>Wind Speed: " + airports[i].weather.wind.v +
+                "<br>Wind Direction: " + airports[i].weather.wind.dir,
+              billboard : {
+                  image : pinBuilder.fromColor(Cesium.Color.ROYALBLUE, 48).toDataURL(),
+                  verticalOrigin : Cesium.VerticalOrigin.BOTTOM
+              }
+          };
+          if(airports[i] === closestPoint){
+            console.log("Closeest pin is ", airports[i])
+            pinObj.label = {
+              text : airports[i].name +
+                    "\nForecast: " + airports[i].weather.weather +
+                    "\nTemperature: " + airports[i].weather.temperature +
+                    "\nWind Speed: " + airports[i].weather.wind.v +
+                    "\nWind Direction: " + airports[i].weather.wind.dir,
+              font : '12pt sans-serif',
+              //style: Cesium.LabelStyle.OUTLINE,
+              //outlineWidth : 2,
+              verticalOrigin : Cesium.VerticalOrigin.BOTTOM,
+              pixelOffset : new Cesium.Cartesian2(0, -9)
+            };
+          }
+          var newPin = viewer.entities.add(pinObj);
+          lastPinBatch.airports.push(newPin);
+        }
+      }
+      function getNearbyAirports(center){
+        lastPinBatch.airports = lastPinBatch.airports || [];
+
         var latLong = Cesium.Cartographic.fromCartesian(center);
-        console.log(latLong);
-
         var obj = {};
         obj.lat = latLong.latitude * (180.0 / Math.PI);
         obj.long = latLong.longitude * (180.0 / Math.PI);
         obj.radius = 50000;
+        var now = new Date().getTime();
+        if(now - lastFetch > 10000){
+          lastFetch = now;
+          $.ajax({
+            url: '/api/getAirports',
+            type: 'GET',
+            data: obj,
+            dataType: 'json',
+            success: function(data){
+              airportData = data;
+              renderAirports(data, center);
+            },
+            error: function(error) { console.log(error); }
+          });
+        }else{
+          renderAirports(airportData, center);
+        }
+      }
 
-        $.ajax({
-          url: '/api/getAirports',
+    // Nearly completed - fix array range error!
+    function getNearbyPlanes(center){
+      var latLong = Cesium.Cartographic.fromCartesian(center);
+      lastPinBatch.planes = lastPinBatch.planes || [];
+
+
+      var obj = {};
+      obj.lat = latLong.latitude * (180.0 / Math.PI);
+      obj.long = latLong.longitude * (180.0 / Math.PI);
+
+      $.ajax({
+          url: '/api/getPlanes',
           type: 'GET',
           data: obj,
           dataType: 'json',
           success: function(data) {
-            var airports = data;
+            var planes = data;
 
-            for (var i=0;i<airports.length;i++){
+            lastPinBatch.planes.forEach(function(pin){ viewer.entities.remove(pin); });
+            lastPinBatch.planes.splice(0, lastPinBatch.planes.length);
+
+            for (var j=0; j<planes.length; j++){
               var pinBuilder = new Cesium.PinBuilder();
-              console.log("Placing airport pin at", Cesium.Cartesian3.fromDegrees(airports[i].lat, airports[i].long));
-              viewer.entities.add({
-                  name : airports[i].name,
-                  position : Cesium.Cartesian3.fromDegrees(airports[i].long, airports[i].lat),
-                  description: "Forecast: " + airports[i].weather.weather + 
-                    "<br>Temperature: " + airports[i].weather.temperature + 
-                    "<br>Wind Speed: " + airports[i].weather.wind.v +
-                    "<br>Wind Direction: " + airports[i].weather.wind.dir,
+              console.log("Placing plane pin at", Cesium.Cartesian3.fromDegrees(planes[j].long, planes[j].lat, planes[j].altitude));
+              var newPin = viewer.entities.add({
+                  name : planes[j].name,
+                  position : Cesium.Cartesian3.fromDegrees(planes[j].long, planes[j].lat, planes[j].altitude),
                   billboard : {
-                      image : pinBuilder.fromColor(Cesium.Color.ROYALBLUE, 48).toDataURL(),
-                      verticalOrigin : Cesium.VerticalOrigin.BOTTOM
+                    image : pinBuilder.fromColor(Cesium.Color.ROYALBLUE, 48).toDataURL(),
+                    verticalOrigin : Cesium.VerticalOrigin.BOTTOM
                   },
                   label : {
-                      text : airports[i].name + 
-                            "\nForecast: " + airports[i].weather.weather + 
-                            "\nTemperature: " + airports[i].weather.temperature + 
-                            "\nWind Speed: " + airports[i].weather.wind.v +
-                            "\nWind Direction: " + airports[i].weather.wind.dir,
-                      font : '12pt monospace',
+                      text : planes[j].name,
+                      font : '12pt sans-serif',
                       //style: Cesium.LabelStyle.OUTLINE,
                       //outlineWidth : 2,
                       verticalOrigin : Cesium.VerticalOrigin.BOTTOM,
                       pixelOffset : new Cesium.Cartesian2(0, -9)
                     }
               });
+              lastPinBatch.planes.push(newPin);
             }
           },
           error: function(error) { console.log(error); }
       });
-      }
+    }
+
+    function getInfoFromLatLong(center){
+      console.log("I'm in");
+      var latLong = Cesium.Cartographic.fromCartesian(center);
+
+        var obj = {};
+        obj.lat = latLong.latitude * (180.0 / Math.PI);
+        obj.long = latLong.longitude * (180.0 / Math.PI);
+
+        $.ajax({
+          url: '/api/getInfoFromLatLong',
+          type: 'GET',
+          data: obj,
+          dataType: 'json',
+          success: function(data) {
+            var info = data;
+            console.log(info);
+          }, error: function(error) { console.log(error); }
+        });
+    }
+
+    function findClosestPoint(dataArr, targetPoint){
+      var closestPoint = null;
+      var closestDistance = Math.min();
+      dataArr.forEach(function(point){
+        var pointCoord = Cesium.Cartesian3.fromDegrees(point.long, point.lat);
+        var distance = Cesium.Cartesian3.distance(pointCoord, targetPoint);
+        if(distance < closestDistance){
+          closestDistance = distance;
+          closestPoint = point;
+        }
+      });
+      return closestPoint;
+    }
+
     }());
 }());
