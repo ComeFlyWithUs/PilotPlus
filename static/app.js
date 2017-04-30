@@ -10,14 +10,14 @@
       selectionIndicator: false,
       navigationInstructionsInitiallyVisible: false,
       animation: false
-  });
+  });/*
   viewer.scene.globe.enableLighting = true;
   viewer.terrainProvider = new Cesium.CesiumTerrainProvider({
     url : 'https://assets.agi.com/stk-terrain/world',
     requestVertexNormals : true
   });
   viewer.scene.globe.depthTestAgainstTerrain = true;
-
+*/
   viewer.scene.screenSpaceCameraController.enableRotate = true;
   viewer.scene.screenSpaceCameraController.enableTranslate = true;
   viewer.scene.screenSpaceCameraController.enableZoom = true;
@@ -89,9 +89,10 @@
           roll : 0
         }
       });
+      executeNextFlightNode();
     });
 
-      //executeNextFlightNode();
+      
 
       // Gets position of our screen - might be useful
       // var lastTime = Cesium.getTimestamp();
@@ -113,29 +114,47 @@
       //     var result = Cesium.Cartesian3.fromDegrees(lat, long, alt);
       //     console.log("Result: " + result);
       // }
-
+      var viewerTarget = null;
       viewer.camera.changed.addEventListener(function(){
-        var rectangle = viewer.camera.computeViewRectangle();
-        var center = Cesium.Rectangle.center(rectangle);
+        var viewport = $("#cesiumContainer");
+        var viewportWidth = viewport.width();
+        var viewportHeight = viewport.height();
+        
+        var ray = viewer.camera.getPickRay(new Cesium.Cartesian2(viewportWidth / 2, viewportHeight / 2));
+        var intersection = Cesium.IntersectionTests.rayEllipsoid(ray, Cesium.Ellipsoid.WGS84);
+        if(!intersection){
+          return;
+        }
+        var center = Cesium.Ray.getPoint(ray, intersection.start);
+        var pinBuilder = new Cesium.PinBuilder();
+        if(viewerTarget){
+          viewer.entities.remove(viewerTarget);
+        }
+        console.log("Posting new pin", center);
+        var bluePin = viewer.entities.add({
+            name : "viewport center",
+            position : center,
+            billboard : {
+                image : pinBuilder.fromColor(Cesium.Color.ROYALBLUE, 48).toDataURL(),
+                verticalOrigin : Cesium.VerticalOrigin.BOTTOM
+            }
+        });
+  // var eastToCenter = rectangle.east - center.longitude;
+        // var northToCenter = rectangle.north - center.latitude;
 
-        var eastToCenter = rectangle.east - center.long;
-        var northToCenter = rectangle.north - center.lat;
+        // var northSouthVal = northToCenter * 0.2;
+        // var northVal = center.latitude + northSouthVal;
+        // var southVal = center.latitude - northSouthVal;
 
-        var northSouthVal = northToCenter * 0.2;
-        var northVal = center + northSouthVal;
-        var southVal = center - northSouthVal;
+        // var eastWestVal = eastToCenter * 0.2;
+        // var eastVal = center.longitude + eastWestVal;
+        // var westVal = center.longitude - eastWestVal;
 
-        var eastWestVal = eastToCenter * 0.2;
-        var eastVal = center + eastWestVal;
-        var westVal = center - eastWestVal;
+        // console.log("west: ", westVal, " south: ", southVal, " east: ", eastVal, " north: ", northVal);
+        // if(viewerTarget != null){
+        //   viewer.entities.remove(viewerTarget);
+        // }
 
-        console.log("west: ", westVal, " south: ", southVal, " east: ", eastVal, " north: ", northVal);
-
-        // viewer.entities.add({
-        //   rectangle : {
-        //     coordinates : Cesium.Rectangle.fromDegrees(westVal, southVal, eastVal, northVal)
-        //   }
-        // });
       });
 
       var locations = null;
@@ -152,7 +171,7 @@
               
               var location = locations[key];
               var pinBuilder = new Cesium.PinBuilder();
-
+              console.log("Placing PoI pin at", Cesium.Cartesian3.fromDegrees(location.lat, location.lon));
               var bluePin = viewer.entities.add({
                   name : location.name,
                   position : Cesium.Cartesian3.fromDegrees(location.lat, location.lon),
