@@ -9,9 +9,9 @@ router.get('/getPlaces', function (req, res, next) {
     json: true };
 
     request(options, function (error, response, body) {
-        if (error)
+        if (error){
             throw new Error(error);
-
+        }
         res.json(response);
     });
 });
@@ -22,7 +22,8 @@ router.get('/getAirports', function (req, res, next) {
     var long = req.param('long');
     var radius = req.param('radius');
     var baseUrl = "https://maps.googleapis.com/maps/api/place/nearbysearch/json";
-    var key = "AIzaSyBA1clTuoA4xzkQaqYdmLlM5VDVQeue8sE";
+    //var key = "AIzaSyBA1clTuoA4xzkQaqYdmLlM5VDVQeue8sE";
+    var key = "AIzaSyBqzAaUsP-A6pacaRpQwBdD0Lk-m2wXs04";
     var url = baseUrl + "?key=" + key + "&location=" + lat + ","+ long + "&radius=" + radius + "&type=airport";
 
     var options = { method: 'GET',
@@ -32,18 +33,19 @@ router.get('/getAirports', function (req, res, next) {
     };
 
     request(options, function (error, response, body) {
-        if (error)
+        if (error){
             throw new Error(error);
-            var listOfPlaces = [];
-            var results = response.body.results;
-            for (var i=0; i<results.length; i++){
-              var result = {};
-              result.name = results[i].name;
-              result.lat = results[i].geometry.location.lat;
-              result.long = results[i].geometry.location.lng;
-              result.weather = {weather : "Cloudy", temperature : 15, wind:{dir:"N",v:10}};
-              listOfPlaces.push(result);
-            }
+        }
+        var listOfPlaces = [];
+        var results = response.body.results;
+        for (var i=0; i<results.length; i++){
+          var result = {};
+          result.name = results[i].name;
+          result.lat = results[i].geometry.location.lat;
+          result.long = results[i].geometry.location.lng;
+          result.weather = {weather : "Cloudy", temperature : 15, wind:{dir:"N",v:10}};
+          listOfPlaces.push(result);
+        }
         res.json(listOfPlaces);
     });
 });
