@@ -12,7 +12,7 @@
       navigationInstructionsInitiallyVisible: false,
       animation: false
   });
-  /*
+/*
   viewer.scene.globe.enableLighting = true;
   viewer.terrainProvider = new Cesium.CesiumTerrainProvider({
     url : 'https://assets.agi.com/stk-terrain/world',
@@ -26,6 +26,16 @@
   viewer.scene.screenSpaceCameraController.enableTilt = false;
   viewer.scene.screenSpaceCameraController.enableLook = true;
 
+  var typeMap = {
+    "airport": new Cesium.Color(0, 0.627, 0.862, 1),
+    "stadium": new Cesium.Color(0.553, 0.423, 0.67, 1),
+    "amusement_park": new Cesium.Color(0.867, 0.317, 0.263, 1),
+    "transit_station": new Cesium.Color(0.902, 0.522, 0.137, 1),
+    "university": new Cesium.Color(0, 0.682, 0.702, 1),
+    "museum": new Cesium.Color(0.929, 0.698, 0.125, 1),
+    "city_hall": new Cesium.Color(0.863, 0.294, 0.537, 1),
+    "default": new Cesium.Color(0, 0, 0, 1)
+  };
 
   (function(){
     //Camera Control
@@ -153,10 +163,11 @@
                 "<br>Wind Speed: " + airports[i].weather.wind.v +
                 "<br>Wind Direction: " + airports[i].weather.wind.dir,
               billboard : {
-                  image : pinBuilder.fromColor(Cesium.Color.ROYALBLUE, 48).toDataURL(),
+                  image : pinBuilder.fromColor(typeMap[airports[i].type] || typeMap.default, 48).toDataURL(),
                   verticalOrigin : Cesium.VerticalOrigin.BOTTOM
               }
           };
+
           if(airports[i] === closestPoint){
             console.log("Closeest pin is ", airports[i])
             pinObj.label = {
@@ -188,7 +199,7 @@
         if(now - lastFetch > 10000){
           lastFetch = now;
           $.ajax({
-            url: '/api/getAirports',
+            url: '/api/getGround',
             type: 'GET',
             data: obj,
             dataType: 'json',
