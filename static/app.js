@@ -196,7 +196,7 @@
         obj.long = latLong.longitude * (180.0 / Math.PI);
         obj.radius = 25000;
         var now = new Date().getTime();
-        if(now - lastFetch > 10000){
+        if(now - lastFetch > 5000){
           lastFetch = now;
           $.ajax({
             url: '/api/getGround',
