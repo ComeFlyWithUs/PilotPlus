@@ -1,6 +1,44 @@
 var express = require('express');
 var router = express.Router();
 var request = require("request");
+var async = require("async");
+var asyncTasks = [];
+var listToReturn = [];
+
+
+
+function getPlaces(lat, long, radius, type) {
+  return function(cb){
+    var baseUrl = "https://maps.googleapis.com/maps/api/place/nearbysearch/json";
+    //var key = "AIzaSyBA1clTuoA4xzkQaqYdmLlM5VDVQeue8sE";
+    var key = "AIzaSyBqzAaUsP-A6pacaRpQwBdD0Lk-m2wXs04";
+    var url = baseUrl + "?key=" + key + "&location=" + lat + ","+ long + "&radius=" + radius + "&type=" + type;
+
+    var options = { method: 'GET',
+      url: url,
+      headers: { 'content-type': 'application/json' },
+      json: true
+    };
+
+    request(options, function (error, response, body) {
+        if (error){
+            return cb(error);
+        }
+        var listOfPlaces = [];
+        var results = response.body.results;
+        for (var i=0; i<results.length; i++){
+          var result = {};
+          result.name = results[i].name;
+          result.lat = results[i].geometry.location.lat;
+          result.long = results[i].geometry.location.lng;
+          result.type = type;
+          result.weather = {weather : "Cloudy", temperature : 15, wind:{dir:"N",v:10}};
+          listOfPlaces.push(result);
+        }
+        cb(null, listOfPlaces);
+    });
+  };
+}
 
 router.get('/getPlaces', function (req, res, next) {
     var options = { method: 'GET',
@@ -15,6 +53,24 @@ router.get('/getPlaces', function (req, res, next) {
         res.json(response);
     });
 });
+
+
+router.get('/getGround', function (req, res, next) {
+    var lat = req.param('lat');
+    var long = req.param('long');
+    var radius = req.param('radius');
+    asyncTasks = [
+      listOfPlaces(lat, long, radius, "airport"),
+      listOfPlaces(lat, long, radius, "stadium"),
+      listOfPlaces(lat, long, radius, "amusement_park")
+    ];
+    listToReturn = [];
+    async.parallel(asyncTasks, function(err, results){
+      res.json(Array.prototype.concat.apply([], results));
+    });
+});
+
+
 
 // http://localhost:8081/api/getAirports?lat=50.727622&long=-3.475646&radius=50000
 router.get('/getAirports', function (req, res, next) {
